@@ -8,9 +8,12 @@ k_plus = 1.0
 k_minus = 0.5
 tau_u = 1.0
 tau_b = 10.0
-n = 1.0
-kB = 1.0
-T = 1.0
+nkT=16877.04 # pascal    
+#α       τb     τu     k−     k+
+# 1.1  2.4487 0.0378 1.3130 0.62226
+# 2.0  5.5923 0.0379 1.5544 0.7183
+#10.0 57.3744 0.0381 1.7256 0.7830
+
 
 # Peterlin function
 def peterlin(sigma, L2=50.0):
@@ -33,7 +36,8 @@ def upper_convected(t, sigma, grad):
 # System of ODEs for sigma_u and sigma_b (both 3x3 -> flattened 18 variables)
 def rhs(t, y):
     sigma_u = y[:9].reshape((3, 3))
-    sigma_b = y[9:].reshape((3, 3))
+    sigma_b = y[9:18].reshape((3, 3))
+    p = y[18]
     grad = grad_v(t)
     
     # Compute Peterlin factors
@@ -41,24 +45,27 @@ def rhs(t, y):
     fP_b = peterlin(sigma_b)
 
     # Eqn for sigma_u
-    dsigma_u_dt = (1-p)* n * kB * T * (grad + grad.T) \
+    dsigma_u_dt = (1-p)* nkT * (grad + grad.T) \
                    - ((1 + k_plus * tau_u) * fP_u * sigma_u \
                    + k_minus * tau_u * fP_b * sigma_b \
                    - tau_u * upper_convected(t, sigma_u, grad))/tau_u
 
     # Eqn for sigma_b
-    dsigma_b_dt = p* n * kB * T * (grad + grad.T) \
+    dsigma_b_dt = p* nkT * (grad + grad.T) \
                    - ((1 + k_minus * tau_b) * fP_b * sigma_b \
                    + k_plus * tau_b * fP_u * sigma_u \
                    - tau_b * upper_convected(t, sigma_b, grad))/tau_b
+                   
+    dp_dt = k_plus * (1-p ) - k_minus * p
 
-    return np.concatenate([dsigma_u_dt.flatten(), dsigma_b_dt.flatten()])
+    return np.concatenate([dsigma_u_dt.flatten(), dsigma_b_dt.flatten(), [dp_dt]])
 
 
 # Initial conditions (identity tensors)
 sigma_u0 = np.eye(3)
 sigma_b0 = np.eye(3)
-y0 = np.concatenate([sigma_u0.flatten(), sigma_b0.flatten()])
+p0 = 1.0/( 1.0 + k_plus/k_minus ) # fraction of closed stickers
+y0 = np.concatenate([sigma_u0.flatten(), sigma_b0.flatten(), [p0]])
 
 
 # Time span
@@ -72,7 +79,8 @@ sol = solve_ivp(rhs, t_span, y0, t_eval=t_eval, method='RK45')
 
 # Extract solutions
 sigma_u_sol = sol.y[:9, :].T.reshape(-1, 3, 3)
-sigma_b_sol = sol.y[9:, :].T.reshape(-1, 3, 3)
+sigma_b_sol = sol.y[9:18, :].T.reshape(-1, 3, 3)
+p_sol = sol.y[18:, :] # extract p solution
 
 
 # Example: print sigma_u at final time
