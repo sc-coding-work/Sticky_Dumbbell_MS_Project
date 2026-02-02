@@ -41,16 +41,16 @@ def rhs(t, y):
     fP_b = peterlin(sigma_b)
 
     # Eqn for sigma_u
-    dsigma_u_dt = (n * kB * T * np.eye(3)
-                   - (1 + k_plus * tau_u) * fP_u * sigma_u
-                   + k_minus * tau_u * fP_b * sigma_b
-                   ) / tau_u + upper_convected(t, sigma_u, grad)
+    dsigma_u_dt = (1-p)* n * kB * T * (grad + grad.T) \
+                   - ((1 + k_plus * tau_u) * fP_u * sigma_u \
+                   + k_minus * tau_u * fP_b * sigma_b \
+                   - tau_u * upper_convected(t, sigma_u, grad))/tau_u
 
     # Eqn for sigma_b
-    dsigma_b_dt = (n * kB * T * np.eye(3)
-                   - (1 + k_minus * tau_b) * fP_b * sigma_b
-                   + k_plus * tau_b * fP_u * sigma_u
-                   ) / tau_b + upper_convected(t, sigma_b, grad)
+    dsigma_b_dt = p* n * kB * T * (grad + grad.T) \
+                   - ((1 + k_minus * tau_b) * fP_b * sigma_b \
+                   + k_plus * tau_b * fP_u * sigma_u \
+                   - tau_b * upper_convected(t, sigma_b, grad))/tau_b
 
     return np.concatenate([dsigma_u_dt.flatten(), dsigma_b_dt.flatten()])
 
