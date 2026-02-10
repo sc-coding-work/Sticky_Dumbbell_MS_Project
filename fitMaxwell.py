@@ -10,7 +10,7 @@ Usage:
     - Optionally set omega_min and omega_max to restrict the fit range.
     - Run:  python fit_maxwell.py
 """
-
+#Note the data file is in format omega G'' omega G' where omega is the frequency
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
