@@ -18,7 +18,7 @@ from scipy.optimize import least_squares
 import os
 
 # ------------------ User settings ------------------
-filename = "ExptBohlin_309.bbx"     # file with omega, G', G''
+filename = "ExptBohlin_311.bbx"     # file with omega, G', G''
 n_modes = 2               # number of Maxwell modes to fit
 omega_min = 0.0          # e.g. 0.1  — set to None to disable lower bound
 omega_max = None          # e.g. 1000 — set to None to disable upper bound
@@ -216,7 +216,7 @@ print("\nGoodness of fit:")
 for k, v in gof.items():
     print(f"{k}: {v:.5g}")
 
-pd.DataFrame([gof]).to_csv("fit_goodness.csv", index=False)
+pd.DataFrame([gof]).to_csv(f"fit_{filename}_goodness.csv", index=False)
 
 print("\nFitting summary:")
 print("  Success:", res.success)
@@ -226,8 +226,8 @@ print("\nFitted parameters:")
 print(df_params.round(5))
 
 # Save results
-df_params.to_csv("fit_parameters.csv", index=False)
-print("\nFitted parameters saved to fit_parameters.csv")
+df_params.to_csv(f"fit_{filename}_parameters.csv", index=False)
+print(f"\nFitted parameters saved to fit_{filename}_parameters.csv")
 
 # Plot
 omega_smooth = np.logspace(np.log10(min(omega_f)), np.log10(max(omega_f)), 200)
