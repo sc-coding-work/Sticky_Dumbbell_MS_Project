@@ -18,7 +18,7 @@ from scipy.optimize import least_squares
 import os
 
 # ------------------ User settings ------------------
-filename = "ExptDHR2_310.bbx"     # file with omega, G', G''
+filename = "Expt42_02A.bbx"     # file with omega, G', G''
 n_modes = 2               # number of Maxwell modes to fit
 omega_min = 0.0          # e.g. 0.1  — set to None to disable lower bound
 omega_max = None          # e.g. 1000 — set to None to disable upper bound
