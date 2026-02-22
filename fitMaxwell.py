@@ -25,7 +25,7 @@ omega_max = None          # e.g. 1000 — set to None to disable upper bound
 maxfev = 20000            # maximum iterations
 eps_for_weight = 1e-8     # avoid divide-by-zero in weighting
 reduce_data_points = True # set to True to reduce data points by allocating in log bins
-numb_rdp = 20               # number of points to keep if reduce_data_points=True
+numb_rdp = 25               # number of points to keep if reduce_data_points=True
 # ---------------------------------------------------
 
 
