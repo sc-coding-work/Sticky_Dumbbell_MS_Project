@@ -18,12 +18,14 @@ from scipy.optimize import least_squares
 import os
 
 # ------------------ User settings ------------------
-filename = "SF004_45A.bbx"     # file with omega, G', G''
+filename = "SF004_05A.bbx"     # file with omega, G', G''
 n_modes = 2               # number of Maxwell modes to fit
 omega_min = 0.0          # e.g. 0.1  — set to None to disable lower bound
 omega_max = None          # e.g. 1000 — set to None to disable upper bound
 maxfev = 20000            # maximum iterations
 eps_for_weight = 1e-8     # avoid divide-by-zero in weighting
+reduce_data_points = False # set to True to reduce data points by allocating in log bins
+numb_rdp = 10               # number of points to keep if reduce_data_points=True
 # ---------------------------------------------------
 
 
@@ -35,6 +37,24 @@ def read_data(filepath: str):
     df = df.dropna()
     return df["omega"].values, df["Gp"].values, df["Gpp"].values
 
+def reduce_x_data_points(omega, Gp, Gpp, numb_rdp):
+    """Reduce data points by allocating in log bins based off the omega values"""
+    logx = np.log(omega)
+    lo, hi = logx.min(), logx.max()
+    edges = np.linspace(lo, hi, num=numb_rdp+1) #numb_rdp is no. of datapoints out I want
+    centers = 0.5*(edges[:-1] + edges[1:])
+    idx = np.empty(numb_rdp, dtype=int)
+    for j in range(numb_rdp):
+        # indices of points in bin j
+        inbin = np.where((logx >= edges[j]) & (logx < edges[j+1]))[0]
+        if len(inbin):
+            # pick the one with logx nearest the centre
+            k = inbin[np.argmin(np.abs(logx[inbin] - centers[j]))]
+        else:
+            # if the bin is empty (rare with small numb_rdp) pick the nearest overall
+            k = np.argmin(np.abs(logx - centers[j]))
+        idx[j] = k
+    return omega[idx], Gp[idx], Gpp[idx]
 
 def generalized_maxwell_response(omega, Gs, taus):
     """
@@ -192,6 +212,11 @@ else:
     Gpp = Gpp_true * (1 + 0.05 * rng.standard_normal(len(omega)))
     pd.DataFrame({"omega": omega, "Gp": Gp, "Gpp": Gpp}).to_csv("data_example.txt", index=False)
     print("Synthetic data saved as data_example.txt")
+
+#Checking if user wants to reduce data points
+if reduce_data_points:
+    print(f"Reducing data points to {numb_rdp} by allocating in log bins...")
+    omega, Gp, Gpp = reduce_x_data_points(omega, Gp, Gpp, numb_rdp)
 
 # --- Apply frequency range filter if requested ---
 mask = np.ones_like(omega, dtype=bool)
