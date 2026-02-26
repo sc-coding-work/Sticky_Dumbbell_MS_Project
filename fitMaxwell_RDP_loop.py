@@ -18,14 +18,14 @@ from scipy.optimize import least_squares
 import os
 
 # ------------------ User settings ------------------
-filename = "SF004_25A.bbx"     # file with omega, G', G''
+filename = "SF004_45A.bbx"     # file with omega, G', G''
 n_modes = 2               # number of Maxwell modes to fit
 omega_min = 0.0          # e.g. 0.1  — set to None to disable lower bound
 omega_max = None          # e.g. 1000 — set to None to disable upper bound
 maxfev = 20000            # maximum iterations
 eps_for_weight = 1e-8     # avoid divide-by-zero in weighting
 reduce_data_points = True # set to True to reduce data points by allocating in log bins
-numb_rdp = 10             # number of points to keep if reduce_data_points=True
+numb_rdp = [10, 15, 20, 25]             # number of points to keep if reduce_data_points=True
 # ---------------------------------------------------
 
 
@@ -215,65 +215,66 @@ else:
 
 #Checking if user wants to reduce data points
 if reduce_data_points:
-    print(f"Reducing data points to {numb_rdp} by allocating in log bins...")
-    omega, Gp, Gpp = reduce_x_data_points(omega, Gp, Gpp, numb_rdp)
+    for numb in numb_rdp:
+        print(f"Reducing data points to {numb} by allocating in log bins...")
+        omega, Gp, Gpp = reduce_x_data_points(omega, Gp, Gpp, numb)
 
-# --- Apply frequency range filter if requested ---
-mask = np.ones_like(omega, dtype=bool)
-if omega_min is not None:
-    mask &= omega >= omega_min
-if omega_max is not None:
-    mask &= omega <= omega_max
+        # --- Apply frequency range filter if requested ---
+        mask = np.ones_like(omega, dtype=bool)
+        if omega_min is not None:
+            mask &= omega >= omega_min
+        if omega_max is not None:
+            mask &= omega <= omega_max
 
-omega_f, Gp_f, Gpp_f = omega[mask], Gp[mask], Gpp[mask]
-if len(omega_f) < 3:
-    raise ValueError("Not enough points in selected frequency range for fitting.")
-if (omega_min is not None) or (omega_max is not None):
-    print(f"Using {len(omega_f)} points in frequency range:", end=" ")
-    print(f"{omega_min or min(omega):.3g} ≤ ω ≤ {omega_max or max(omega):.3g}")
+        omega_f, Gp_f, Gpp_f = omega[mask], Gp[mask], Gpp[mask]
+        if len(omega_f) < 3:
+            raise ValueError("Not enough points in selected frequency range for fitting.")
+        if (omega_min is not None) or (omega_max is not None):
+            print(f"Using {len(omega_f)} points in frequency range:", end=" ")
+            print(f"{omega_min or min(omega):.3g} ≤ ω ≤ {omega_max or max(omega):.3g}")
 
-# Perform fit
-res, df_params = fit_generalized_maxwell(omega_f, Gp_f, Gpp_f, n_modes)
+        # Perform fit
+        res, df_params = fit_generalized_maxwell(omega_f, Gp_f, Gpp_f, n_modes)
 
-gof = compute_goodness_of_fit(omega_f, Gp_f, Gpp_f, res, n_modes)
+        gof = compute_goodness_of_fit(omega_f, Gp_f, Gpp_f, res, n_modes)
 
-print("\nGoodness of fit:")
-for k, v in gof.items():
-    print(f"{k}: {v:.5g}")
+        print("\nGoodness of fit:")
+        for k, v in gof.items():
+            print(f"{k}: {v:.5g}")
 
-pd.DataFrame([gof]).to_csv(f"fit_{filename}_{numb_rdp}DP_goodness.csv", index=False)
+        pd.DataFrame([gof]).to_csv(f"fit_{filename}_{numb}DP_goodness.csv", index=False)
 
-print("\nFitting summary:")
-print("  Success:", res.success)
-print("  Message:", res.message)
-print("  Cost:", res.cost)
-print("\nFitted parameters:")
-print(df_params.round(5))
+        print("\nFitting summary:")
+        print("  Success:", res.success)
+        print("  Message:", res.message)
+        print("  Cost:", res.cost)
+        print("\nFitted parameters:")
+        print(df_params.round(5))
 
-# Save results
-df_params.to_csv(f"fit_{filename}{numb_rdp}DP_parameters.csv", index=False)
-print(f"\nFitted parameters saved to fit_{filename}_{numb_rdp}DP_parameters.csv")
+        # Save results
+        df_params.to_csv(f"fit_{filename}_{numb}DP_parameters.csv", index=False)
+        print(f"\nFitted parameters saved to fit_{filename}_{numb}DP_parameters.csv")
 
-# Plot
-omega_smooth = np.logspace(np.log10(min(omega_f)), np.log10(max(omega_f)), 200)
-Gp_fit, Gpp_fit = generalized_maxwell_response(
-    omega_smooth,
-    df_params["G_k"].values,
-    df_params["tau_k"].values
-)
-
-plt.figure(figsize=(7, 5))
-plt.loglog(omega, Gp, "o", color="gray", alpha=0.4, label="G' all data")
-plt.loglog(omega, Gpp, "s", color="lightgray", alpha=0.4, label="G'' all data")
-plt.loglog(omega_f, Gp_f, "o", label="G' fit range")
-plt.loglog(omega_f, Gpp_f, "s", label="G'' fit range")
-plt.loglog(omega_smooth, Gp_fit, "-", label="G' fit")
-plt.loglog(omega_smooth, Gpp_fit, "--", label="G'' fit")
-plt.xlabel("ω (rad/s)")
-plt.ylabel("G', G'' (Pa)")
-plt.title(f"Generalized Maxwell fit ({n_modes} modes)")
-plt.legend()
-plt.grid(True, which="both", ls=":", alpha=0.5)
-plt.tight_layout()
-plt.savefig(f"{filename}_G'_G''_graph.png")
-plt.show()
+        # Plot
+        omega_smooth = np.logspace(np.log10(min(omega_f)), np.log10(max(omega_f)), 200)
+        Gp_fit, Gpp_fit = generalized_maxwell_response(
+            omega_smooth,
+            df_params["G_k"].values,
+            df_params["tau_k"].values
+        )
+        # plt.figure(figsize=(7, 5))
+        # plt.loglog(omega, Gp, "o", color="gray", alpha=0.4, label="G' all data")
+        # plt.loglog(omega, Gpp, "s", color="lightgray", alpha=0.4, label="G'' all data")
+        # plt.loglog(omega_f, Gp_f, "o", label="G' fit range")
+        # plt.loglog(omega_f, Gpp_f, "s", label="G'' fit range")
+        # plt.loglog(omega_smooth, Gp_fit, "-", label="G' fit")
+        # plt.loglog(omega_smooth, Gpp_fit, "--", label="G'' fit")
+        # plt.xlabel("ω (rad/s)")
+        # plt.ylabel("G', G'' (Pa)")
+        # plt.title(f"Generalized Maxwell fit ({n_modes} modes)")
+        # plt.legend()
+        # plt.grid(True, which="both", ls=":", alpha=0.5)
+        # plt.tight_layout()
+        # plt.show()
+else:
+    print("Data reduction disabled — please enable")
