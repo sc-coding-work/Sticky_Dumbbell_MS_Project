@@ -18,14 +18,14 @@ from scipy.optimize import least_squares
 import os
 
 # ------------------ User settings ------------------
-filename = "SF004_15A.bbx"     # file with omega, G', G''
+filename = "SF004_25A.bbx"     # file with omega, G', G''
 n_modes = 2               # number of Maxwell modes to fit
 omega_min = 0.0          # e.g. 0.1  — set to None to disable lower bound
 omega_max = None          # e.g. 1000 — set to None to disable upper bound
 maxfev = 20000            # maximum iterations
 eps_for_weight = 1e-8     # avoid divide-by-zero in weighting
 reduce_data_points = True # set to True to reduce data points by allocating in log bins
-numb_rdp = 25               # number of points to keep if reduce_data_points=True
+numb_rdp = 10               # number of points to keep if reduce_data_points=True
 # ---------------------------------------------------
 
 
